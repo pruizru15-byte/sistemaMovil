@@ -1,0 +1,70 @@
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./themes.css";
+@import "./typography.css";
+
+/* Base Resets */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+/* Touch target minimum standard for mobile/accessibility */
+button, input, select, textarea, a {
+  touch-action: manipulation;
+}
+
+/* Custom soft scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Utility classes matching the mockups */
+.app-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 1.5rem;
+  box-shadow: var(--color-card-shadow);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.app-card-hover:hover {
+  box-shadow: var(--color-card-shadow-hover);
+  border-color: var(--color-border);
+}
+
+.app-pill-active {
+  background-color: var(--color-primary);
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px 0 var(--color-primary-glow);
+}
+
+/* Dotted grid background */
+.bg-dots {
+  background-image: radial-gradient(#CBD5E1 1.5px, transparent 1.5px);
+  background-size: 16px 16px;
+}
+
+[data-theme="dark"] .bg-dots {
+  background-image: radial-gradient(#334155 1.5px, transparent 1.5px);
+}

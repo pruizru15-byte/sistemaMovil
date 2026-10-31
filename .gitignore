@@ -1,0 +1,41 @@
+# Entornos y secretos
+.env
+.env.backup
+.env.production
+backend/.env
+frontend/.env.local
+
+# Dependencias
+node_modules/
+backend/vendor/
+frontend/node_modules/
+
+# Archivos de compilación
+# Nota: Si subes el build compilado para cPanel puedes quitar frontend/dist de aquí
+# frontend/dist
+
+# Bases de datos y archivos de prueba locales
+backend/control_asistencia
+*.sqlite
+*.sqlite-journal
+
+# Documentos pesados de diseño / capturas locales
+*.docx
+*.pdf
+Entrenamiento intenso en gimnasio desgastado.png
+
+# Logs y temporales
+*.log
+npm-debug.log*
+yarn-debug.log*
+backend/storage/logs/*.log
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+
+# Editores y SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+

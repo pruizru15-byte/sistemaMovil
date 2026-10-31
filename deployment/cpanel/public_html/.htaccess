@@ -1,0 +1,29 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1. Cabeceras de Autorización para Laravel Sanctum (Tokens Bearer)
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    RewriteCond %{HTTP:x-xsrf-token} .
+    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # 2. Portafolio respaldado: si la URL pide /portafolio, no interferir
+    RewriteRule ^portafolio(/.*)?$ - [L]
+
+    # 3. Rutas API de Laravel y Sanctum -> procesadas por index.php
+    RewriteRule ^(api|sanctum)(/.*)?$ index.php [L,QSA]
+
+    # 4. Archivos estáticos existentes (JS, CSS, imágenes, favicon de frontend/dist)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 5. Rutas SPA de React (ej: /login, /dashboard, /conductores, /asistencia) -> index.html
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# Bloquear acceso a archivos sensibles u ocultos
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+

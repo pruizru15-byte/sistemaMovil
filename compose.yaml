@@ -1,0 +1,93 @@
+services:
+  database:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-control_asistencia}
+      MYSQL_USER: ${DB_USERNAME:-asistencia_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-asistencia_secret_2026}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_secret_lan_2026}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    networks:
+      - lan_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root_secret_lan_2026}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    restart: unless-stopped
+    working_dir: /var/www/backend
+    volumes:
+      - ./backend:/var/www/backend
+    environment:
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-control_asistencia}
+      DB_USERNAME: ${DB_USERNAME:-asistencia_user}
+      DB_PASSWORD: ${DB_PASSWORD:-asistencia_secret_2026}
+    networks:
+      - lan_network
+    depends_on:
+      database:
+        condition: service_healthy
+
+  reverb:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    restart: unless-stopped
+    working_dir: /var/www/backend
+    command: sh -c "if [ -f artisan ]; then php artisan reverb:start --host=0.0.0.0 --port=8080; else sleep 3600; fi"
+    volumes:
+      - ./backend:/var/www/backend
+    networks:
+      - lan_network
+    depends_on:
+      - backend
+
+  proxy:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./backend:/var/www/backend
+      - ./frontend/dist:/var/www/frontend/dist:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./docker/nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - lan_network
+    depends_on:
+      - backend
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:80"
+    environment:
+      PMA_HOST: database
+      PMA_PORT: 3306
+      PMA_USER: ${DB_USERNAME:-asistencia_user}
+      PMA_PASSWORD: ${DB_PASSWORD:-asistencia_secret_2026}
+    networks:
+      - lan_network
+    depends_on:
+      database:
+        condition: service_healthy
+
+networks:
+  lan_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local

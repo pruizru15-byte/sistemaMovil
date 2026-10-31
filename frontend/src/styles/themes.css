@@ -1,0 +1,111 @@
+/* ========================================================
+   SISTEMA DE ASISTENCIA Y TURNOS — TERMINAL DE ATE
+   Tokens Semánticos de Diseño (Exactos según Mockups)
+   ======================================================== */
+
+/* Tema Claro (Mockup Oficial) */
+:root {
+  --color-bg: #EDF3F8;
+  --color-bg-subtle: #F4F7FB;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F8FAFD;
+  --color-surface-active: #EDF4FC;
+
+  --color-text: #0F172A;
+  --color-text-title: #0B1B3D;
+  --color-text-secondary: #64748B;
+  --color-text-muted: #94A3B8;
+
+  --color-border: #E2E8F0;
+  --color-border-subtle: #EDF2F7;
+  --color-border-focus: #1D68F2;
+
+  /* Azul Corporativo Oficial (Mockups) */
+  --color-primary: #1D68F2;
+  --color-primary-hover: #1557D6;
+  --color-primary-active: #0F46B8;
+  --color-primary-deep: #0B1B3D;
+  --color-primary-light: #EBF3FE;
+  --color-primary-glow: rgba(29, 104, 242, 0.15);
+
+  /* Colores de Estado Semánticos */
+  --color-success: #10B981;
+  --color-success-bg: #DEF7EC;
+  --color-success-text: #03543F;
+
+  --color-warning: #F59E0B;
+  --color-warning-bg: #FEF3C7;
+  --color-warning-text: #92400E;
+
+  --color-error: #EF4444;
+  --color-error-bg: #FEE2E2;
+  --color-error-text: #991B1B;
+
+  --color-info: #3B82F6;
+  --color-info-bg: #DBEAFE;
+  --color-info-text: #1E40AF;
+
+  --color-purple: #8B5CF6;
+  --color-purple-bg: #F3ECFD;
+  --color-purple-text: #5B21B6;
+
+  /* Elementos de Navegación y Tarjetas */
+  --color-sidebar-bg: #FFFFFF;
+  --color-card-bg: #FFFFFF;
+  --color-card-shadow: 0 10px 30px -5px rgba(29, 104, 242, 0.05), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+  --color-card-shadow-hover: 0 20px 35px -5px rgba(29, 104, 242, 0.09), 0 8px 16px -3px rgba(15, 23, 42, 0.05);
+
+  --radius-card: 1.5rem; /* 24px */
+  --radius-pill: 9999px;
+  --radius-input: 0.875rem; /* 14px */
+}
+
+/* Tema Oscuro (Para turnos noche en cabina) */
+[data-theme="dark"] {
+  --color-bg: #0B1220;
+  --color-bg-subtle: #0F172A;
+  --color-surface: #151F30;
+  --color-surface-hover: #1E2C42;
+  --color-surface-active: #24344D;
+
+  --color-text: #F8FAFC;
+  --color-text-title: #FFFFFF;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
+
+  --color-border: #243247;
+  --color-border-subtle: #1A2639;
+  --color-border-focus: #3B82F6;
+
+  --color-primary: #3B82F6;
+  --color-primary-hover: #60A5FA;
+  --color-primary-active: #2563EB;
+  --color-primary-deep: #1E3A8A;
+  --color-primary-light: #1E293B;
+  --color-primary-glow: rgba(59, 130, 246, 0.25);
+
+  --color-success: #22C55E;
+  --color-success-bg: #064E3B;
+  --color-success-text: #86EFAC;
+
+  --color-warning: #F59E0B;
+  --color-warning-bg: #78350F;
+  --color-warning-text: #FDE68A;
+
+  --color-error: #EF4444;
+  --color-error-bg: #7F1D1D;
+  --color-error-text: #FCA5A5;
+
+  --color-info: #60A5FA;
+  --color-info-bg: #1E3A8A;
+  --color-info-text: #93C5FD;
+
+  --color-purple: #A78BFA;
+  --color-purple-bg: #4C1D95;
+  --color-purple-text: #DDD6FE;
+
+  --color-sidebar-bg: #111A2C;
+  --color-card-bg: #151F30;
+  --color-card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4);
+  --color-card-shadow-hover: 0 20px 35px -5px rgba(0, 0, 0, 0.6);
+}

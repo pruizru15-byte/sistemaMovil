@@ -1,0 +1,29 @@
+{
+  "package": "skills-control-asistencia-lan",
+  "version": "1.0.0",
+  "date": "2026-10-17",
+  "skills": [
+    "01-arquitectura",
+    "02-frontend",
+    "03-ui-ux",
+    "04-backend",
+    "05-base-datos",
+    "06-seguridad",
+    "07-gps",
+    "08-android",
+    "09-red-local",
+    "10-reglas-negocio",
+    "11-testing",
+    "12-documentacion"
+  ],
+  "documents": [
+    "REQUISITOS.md",
+    "DECISIONES.md",
+    "SEGURIDAD.md",
+    "ARQUITECTURA.md",
+    "API.md",
+    "GUIA_AGENTES.md",
+    "TESTING.md",
+    "FUENTES_Y_VERSIONES.md"
+  ]
+}

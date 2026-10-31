@@ -1,0 +1,12 @@
+---
+deployment:
+  tasks:
+    - export BACKENDPATH=/storage/popydev/backend
+    - export DEPLOYPATH=/storage/popydev/public_html
+    - /bin/mkdir -p $BACKENDPATH
+    - /bin/cp -R backend/* $BACKENDPATH/
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -R frontend/dist/* $DEPLOYPATH/
+    - /bin/cp deployment/cpanel/public_html/index.php $DEPLOYPATH/index.php
+    - /bin/cp deployment/cpanel/public_html/.htaccess $DEPLOYPATH/.htaccess
+
