@@ -5,8 +5,9 @@ deployment:
     - export DEPLOYPATH=/storage/popydev/public_html
     - /bin/mkdir -p $BACKENDPATH
     - /bin/cp -R backend/* $BACKENDPATH/
+    - /bin/mkdir -p $BACKENDPATH/storage $BACKENDPATH/bootstrap/cache
+    - /bin/chmod -R 775 $BACKENDPATH/storage $BACKENDPATH/bootstrap/cache
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/cp -R frontend/dist/* $DEPLOYPATH/
     - /bin/cp deployment/cpanel/public_html/index.php $DEPLOYPATH/index.php
     - /bin/cp deployment/cpanel/public_html/.htaccess $DEPLOYPATH/.htaccess
-
