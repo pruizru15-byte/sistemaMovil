@@ -8,6 +8,12 @@ use App\Http\Controllers\Api\TurnoController;
 use App\Http\Controllers\Api\ServicioController;
 use App\Http\Controllers\Api\IncidenciaController;
 use App\Http\Controllers\Api\AsistenciaController;
+use App\Http\Controllers\Api\PerfilController;
+use App\Http\Controllers\Api\ReporteController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\ConfiguracionController;
+use App\Http\Controllers\Api\NotificacionController;
+use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
@@ -42,7 +48,21 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
+        Route::put('/me', [PerfilController::class, 'update']);
         Route::post('/auth/reset-admin', [AuthController::class, 'resetAdmin']);
+
+        // Módulo 02: Dashboard en Vivo
+        Route::get('dashboard/stats', [DashboardController::class, 'stats']);
+
+        // Módulo 11: Mi Perfil
+        Route::get('perfil', [PerfilController::class, 'show']);
+        Route::put('perfil', [PerfilController::class, 'update']);
+        Route::put('perfil/password', [PerfilController::class, 'updatePassword']);
+
+        // Módulo 01: Gestión de Usuarios (Admin)
+        Route::apiResource('users', UserController::class);
+        Route::post('users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
+        Route::post('users/{id}/reset-password', [UserController::class, 'resetPassword']);
 
         // Módulo 03: Conductores
         Route::apiResource('conductores', ConductorController::class);
@@ -73,5 +93,21 @@ Route::prefix('v1')->group(function () {
         // Módulo 06: Asistencia GPS
         Route::get('asistencias', [AsistenciaController::class, 'index']);
         Route::post('asistencias', [AsistenciaController::class, 'store']);
+
+        // Módulo 07: Reportes y Exportación
+        Route::get('reportes/stats', [ReporteController::class, 'stats']);
+        Route::get('reportes/asistencias/export', [ReporteController::class, 'exportAsistencias']);
+        Route::get('reportes/vehiculos/export', [ReporteController::class, 'exportVehiculos']);
+        Route::get('reportes/turnos/export', [ReporteController::class, 'exportTurnos']);
+
+        // Módulo 08: Notificaciones y Alertas LAN
+        Route::get('notificaciones', [NotificacionController::class, 'index']);
+        Route::post('notificaciones', [NotificacionController::class, 'store']);
+        Route::post('notificaciones/{id}/read', [NotificacionController::class, 'markAsRead']);
+        Route::post('notificaciones/read-all', [NotificacionController::class, 'markAllAsRead']);
+
+        // Módulo 09: Configuración (Admin)
+        Route::get('configuracion', [ConfiguracionController::class, 'index']);
+        Route::put('configuracion', [ConfiguracionController::class, 'update']);
     });
 });

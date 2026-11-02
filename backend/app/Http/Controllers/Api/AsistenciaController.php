@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Asistencia;
 use App\Models\AsignacionTurno;
 use App\Models\AuditLog;
+use App\Models\Configuracion;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -51,6 +52,10 @@ class AsistenciaController extends Controller
         $tardanzas = $asistencias->where('estado_puntualidad', 'tardanza')->count();
         $dentroGeocerca = $asistencias->where('dentro_geocerca', true)->count();
 
+        $terminalLat = (float) Configuracion::get('geocerca_lat', self::TERMINAL_LAT);
+        $terminalLng = (float) Configuracion::get('geocerca_lng', self::TERMINAL_LNG);
+        $radioMetros = (float) Configuracion::get('geocerca_radio_metros', self::GEOCERCA_RADIO_METROS);
+
         return response()->json([
             'data' => $asistencias,
             'summary' => [
@@ -61,9 +66,9 @@ class AsistenciaController extends Controller
                 'dentro_geocerca' => $dentroGeocerca,
                 'porcentaje_geocerca' => $total > 0 ? round(($dentroGeocerca / $total) * 100, 1) : 100,
                 'terminal_coordenadas' => [
-                    'lat' => self::TERMINAL_LAT,
-                    'lng' => self::TERMINAL_LNG,
-                    'radio_metros' => self::GEOCERCA_RADIO_METROS
+                    'lat' => $terminalLat,
+                    'lng' => $terminalLng,
+                    'radio_metros' => $radioMetros
                 ]
             ]
         ]);
@@ -87,15 +92,19 @@ class AsistenciaController extends Controller
         $deviceTime = Carbon::parse($validated['fecha_hora_dispositivo']);
         $diffMinutes = abs($serverNow->diffInMinutes($deviceTime));
 
+        $terminalLat = (float) Configuracion::get('geocerca_lat', self::TERMINAL_LAT);
+        $terminalLng = (float) Configuracion::get('geocerca_lng', self::TERMINAL_LNG);
+        $radioMetros = (float) Configuracion::get('geocerca_radio_metros', self::GEOCERCA_RADIO_METROS);
+
         // Cálculo de distancia Haversine al Terminal de Ate
         $distanciaMetros = $this->calcularDistanciaHaversine(
             $validated['latitud'],
             $validated['longitud'],
-            self::TERMINAL_LAT,
-            self::TERMINAL_LNG
+            $terminalLat,
+            $terminalLng
         );
 
-        $dentroGeocerca = ($distanciaMetros <= self::GEOCERCA_RADIO_METROS);
+        $dentroGeocerca = ($distanciaMetros <= $radioMetros);
         $esMock = $validated['es_mock_location'] ?? false;
 
         // Evaluar puntualidad

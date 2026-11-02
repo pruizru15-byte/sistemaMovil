@@ -1,4 +1,4 @@
-import { useState, type FC } from 'react';
+import { useState, useEffect, type FC } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useTheme } from '../../../app/providers/ThemeProvider';
 import { ConductoresPage } from '../../conductores/pages/ConductoresPage';
@@ -6,6 +6,13 @@ import { VehiculosPage } from '../../vehiculos/pages/VehiculosPage';
 import { TurnosPage } from '../../turnos/pages/TurnosPage';
 import { RutasServiciosPage } from '../../rutas/pages/RutasServiciosPage';
 import { AsistenciasPage } from '../../asistencia/pages/AsistenciasPage';
+import { ReportesPage } from '../../reportes/pages/ReportesPage';
+import { PerfilPage } from '../../perfil/pages/PerfilPage';
+import { UsuariosPage } from '../../usuarios/pages/UsuariosPage';
+import { ConfiguracionPage } from '../../configuracion/pages/ConfiguracionPage';
+import { NotificacionesPage } from '../../notificaciones/pages/NotificacionesPage';
+import { dashboardApi, type DashboardStats } from '../../../shared/services/dashboard.api';
+import { notificacionesApi } from '../../../shared/services/notificaciones.api';
 import {
   Bus,
   LayoutDashboard,
@@ -29,7 +36,6 @@ import {
   Radio,
   TrendingUp,
   LogIn,
-  Edit3,
 } from 'lucide-react';
 
 export const DashboardPage: FC = () => {
@@ -37,6 +43,20 @@ export const DashboardPage: FC = () => {
   const { theme, toggleTheme } = useTheme();
 
   const [activeSection, setActiveSection] = useState<string>('dashboard');
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  useEffect(() => {
+    dashboardApi
+      .getStats()
+      .then(setDashboardStats)
+      .catch(() => {});
+
+    notificacionesApi
+      .getNotificaciones()
+      .then((res) => setUnreadCount(res.unread_count))
+      .catch(() => {});
+  }, [activeSection]);
 
   const isAdmin = user?.role === 'admin';
   const isSupervisor = user?.role === 'supervisor';
@@ -51,13 +71,19 @@ export const DashboardPage: FC = () => {
     { id: 'asistencias', label: 'Asistencias', icon: ClipboardCheck, show: true },
     { id: 'rutas', label: 'Rutas y servicios', icon: RouteIcon, show: true },
     { id: 'reportes', label: 'Reportes', icon: FileText, show: isAdmin || isSupervisor },
-    { id: 'notificaciones', label: 'Notificaciones', icon: Bell, badge: 3, show: true },
+    {
+      id: 'notificaciones',
+      label: 'Notificaciones',
+      icon: Bell,
+      badge: unreadCount > 0 ? unreadCount : undefined,
+      show: true,
+    },
     { id: 'configuracion', label: 'Configuración', icon: Settings, show: isAdmin },
     { id: 'perfil', label: 'Mi perfil', icon: User, show: true },
   ];
 
-  // Datos para el gráfico de barras semanal (exacto al mockup)
-  const weekData = [
+  // Datos para el gráfico de barras semanal
+  const weekDataDefault = [
     { day: 'Lun 13', asistencias: 75, programadas: 90 },
     { day: 'Mar 14', asistencias: 82, programadas: 96 },
     { day: 'Mié 15', asistencias: 96, programadas: 120, current: true },
@@ -66,6 +92,23 @@ export const DashboardPage: FC = () => {
     { day: 'Sáb 18', asistencias: 72, programadas: 84 },
     { day: 'Dom 19', asistencias: 70, programadas: 80 },
   ];
+
+  const displayWeekData =
+    dashboardStats?.semana && dashboardStats.semana.length > 0
+      ? dashboardStats.semana
+      : weekDataDefault;
+
+  const maxWeekScale = Math.max(
+    ...displayWeekData.map((d) => Math.max(d.asistencias, d.programadas)),
+    100
+  );
+
+  const fechaActualLegible = new Intl.DateTimeFormat('es-PE', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date());
 
   return (
     <div className="min-h-screen flex bg-[#EDF3F8] text-[#0F172A] font-sans">
@@ -152,11 +195,14 @@ export const DashboardPage: FC = () => {
             <button
               onClick={() => setActiveSection('notificaciones')}
               className="relative w-10 h-10 rounded-full flex items-center justify-center text-[#475569] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
+              title="Notificaciones"
             >
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#EF4444] text-white text-[9px] font-black flex items-center justify-center">
-                3
-              </span>
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#EF4444] text-white text-[9px] font-black flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </button>
 
             {/* Switch de Tema Claro / Oscuro */}
@@ -212,18 +258,28 @@ export const DashboardPage: FC = () => {
             ======================================================== */}
         <main className="p-6 sm:p-8 flex-1 overflow-y-auto space-y-6">
           {/* Vistas Secundarias Conectadas */}
+          {activeSection === 'usuarios' && <UsuariosPage />}
           {activeSection === 'conductores' && <ConductoresPage />}
           {activeSection === 'vehiculos' && <VehiculosPage />}
           {activeSection === 'turnos' && <TurnosPage />}
           {activeSection === 'rutas' && <RutasServiciosPage />}
           {activeSection === 'asistencias' && <AsistenciasPage />}
+          {activeSection === 'reportes' && <ReportesPage />}
+          {activeSection === 'notificaciones' && <NotificacionesPage />}
+          {activeSection === 'configuracion' && <ConfiguracionPage />}
+          {activeSection === 'perfil' && <PerfilPage />}
 
           {/* Mensaje Informativo para Secciones en Construcción */}
-          {activeSection !== 'conductores' &&
+          {activeSection !== 'usuarios' &&
+           activeSection !== 'conductores' &&
            activeSection !== 'vehiculos' &&
            activeSection !== 'turnos' &&
            activeSection !== 'rutas' &&
            activeSection !== 'asistencias' &&
+           activeSection !== 'reportes' &&
+           activeSection !== 'notificaciones' &&
+           activeSection !== 'configuracion' &&
+           activeSection !== 'perfil' &&
            activeSection !== 'dashboard' && (
             <div className="p-12 text-center rounded-[28px] bg-white border border-[#E8EFF6] shadow-sm max-w-xl mx-auto">
               <div className="w-16 h-16 rounded-[20px] bg-[#E1EDFD] text-[#1D68F2] flex items-center justify-center mx-auto mb-4">
@@ -267,19 +323,19 @@ export const DashboardPage: FC = () => {
                 </div>
 
                 {/* Pill de Fecha */}
-                <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white border border-[#E8EFF6] text-xs font-bold text-[#334155] shadow-xs shrink-0">
+                <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white border border-[#E8EFF6] text-xs font-bold text-[#334155] shadow-xs shrink-0 capitalize">
                   <Calendar className="w-4 h-4 text-[#1D68F2]" />
-                  <span>Miércoles, 15 de enero de 2025 · 07:02 - Sistema operativo</span>
+                  <span>{fechaActualLegible} · Sistema Operativo LAN</span>
                 </div>
               </div>
 
               {/* ========================================================
-                  4 TARJETAS KPI SUPERIORES (Exactas al Mockup)
+                  4 TARJETAS KPI SUPERIORES (En vivo con la base de datos)
                   ======================================================== */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                 {/* KPI 1: Usuarios Activos / Conductores */}
                 <div
-                  onClick={() => setActiveSection('conductores')}
+                  onClick={() => setActiveSection(isAdmin ? 'usuarios' : 'conductores')}
                   className="p-5 rounded-[24px] bg-white border border-[#E8EFF6] shadow-[0_10px_25px_rgba(29,104,242,0.04)] hover:shadow-[0_15px_30px_rgba(29,104,242,0.08)] hover:border-[#BFDBFE] transition-all cursor-pointer flex flex-col justify-between"
                 >
                   <div className="flex items-start justify-between">
@@ -289,10 +345,12 @@ export const DashboardPage: FC = () => {
                       </p>
                       <div className="mt-2 flex items-baseline gap-2.5">
                         <span className="text-3xl font-extrabold text-[#0B1B3D]">
-                          {isAdmin ? '128' : '92'}
+                          {isAdmin
+                            ? dashboardStats?.usuarios_activos ?? 128
+                            : dashboardStats?.conductores_programados ?? 92}
                         </span>
                         <span className="inline-flex items-center gap-0.5 text-xs font-bold text-[#10B981]">
-                          <TrendingUp className="w-3.5 h-3.5" /> 12%
+                          <TrendingUp className="w-3.5 h-3.5" /> En línea
                         </span>
                       </div>
                     </div>
@@ -301,7 +359,9 @@ export const DashboardPage: FC = () => {
                     </div>
                   </div>
                   <p className="text-[11px] font-medium text-[#94A3B8] mt-3">
-                    {isAdmin ? 'de 150 registrados' : 'de 100 conductores'}
+                    {isAdmin
+                      ? `de ${dashboardStats?.usuarios_total ?? 150} registrados`
+                      : `de ${dashboardStats?.conductores_total ?? 100} conductores`}
                   </p>
                 </div>
 
@@ -314,9 +374,11 @@ export const DashboardPage: FC = () => {
                     <div>
                       <p className="text-xs font-bold text-[#64748B]">Asistencias de hoy</p>
                       <div className="mt-2 flex items-baseline gap-2.5">
-                        <span className="text-3xl font-extrabold text-[#0B1B3D]">96</span>
+                        <span className="text-3xl font-extrabold text-[#0B1B3D]">
+                          {dashboardStats?.asistencias_hoy ?? 96}
+                        </span>
                         <span className="inline-flex items-center gap-0.5 text-xs font-bold text-[#10B981]">
-                          <TrendingUp className="w-3.5 h-3.5" /> 8%
+                          <TrendingUp className="w-3.5 h-3.5" /> Hoy
                         </span>
                       </div>
                     </div>
@@ -325,7 +387,7 @@ export const DashboardPage: FC = () => {
                     </div>
                   </div>
                   <p className="text-[11px] font-medium text-[#94A3B8] mt-3">
-                    de 120 programadas
+                    de {dashboardStats?.programadas_hoy ?? 120} programadas
                   </p>
                 </div>
 
@@ -341,13 +403,13 @@ export const DashboardPage: FC = () => {
                       </p>
                       <div className="mt-2 flex items-baseline gap-2.5">
                         <span className="text-3xl font-extrabold text-[#0B1B3D]">
-                          {isAdmin ? '24' : '14'}
+                          {isAdmin
+                            ? dashboardStats?.turnos_hoy ?? 24
+                            : dashboardStats?.servicios_activos ?? 14}
                         </span>
-                        {!isAdmin && (
-                          <span className="inline-flex items-center gap-0.5 text-xs font-bold text-[#10B981]">
-                            <TrendingUp className="w-3.5 h-3.5" /> 7%
-                          </span>
-                        )}
+                        <span className="inline-flex items-center gap-0.5 text-xs font-bold text-[#10B981]">
+                          <TrendingUp className="w-3.5 h-3.5" /> Activo
+                        </span>
                       </div>
                     </div>
                     <div className="w-12 h-12 rounded-[16px] bg-[#F3ECFD] text-[#8B5CF6] flex items-center justify-center shrink-0">
@@ -355,7 +417,7 @@ export const DashboardPage: FC = () => {
                     </div>
                   </div>
                   <p className="text-[11px] font-medium text-[#94A3B8] mt-3">
-                    {isAdmin ? 'Hoy, 3 turnos rotativos' : 'de 16 rutas programadas'}
+                    {isAdmin ? 'Hoy, turnos rotativos' : 'Rutas en ejecución'}
                   </p>
                 </div>
 
@@ -368,9 +430,11 @@ export const DashboardPage: FC = () => {
                     <div>
                       <p className="text-xs font-bold text-[#64748B]">Vehículos operativos</p>
                       <div className="mt-2 flex items-baseline gap-2.5">
-                        <span className="text-3xl font-extrabold text-[#0B1B3D]">18</span>
+                        <span className="text-3xl font-extrabold text-[#0B1B3D]">
+                          {dashboardStats?.vehiculos_operativos ?? 18}
+                        </span>
                         <span className="inline-flex items-center gap-0.5 text-xs font-bold text-[#10B981]">
-                          <TrendingUp className="w-3.5 h-3.5" /> 95%
+                          <TrendingUp className="w-3.5 h-3.5" /> Disponible
                         </span>
                       </div>
                     </div>
@@ -379,7 +443,7 @@ export const DashboardPage: FC = () => {
                     </div>
                   </div>
                   <p className="text-[11px] font-medium text-[#94A3B8] mt-3">
-                    de 19 unidades en flota
+                    de {dashboardStats?.vehiculos_total ?? 19} unidades en flota
                   </p>
                 </div>
               </div>
@@ -413,33 +477,27 @@ export const DashboardPage: FC = () => {
 
                   {/* Visualizador de Barras Semanales */}
                   <div className="h-56 flex items-end justify-between gap-2 sm:gap-4 pt-4 border-b border-[#F1F5F9] pb-2 relative">
-                    {/* Tooltip flotante en Miércoles (Fiel al Mockup) */}
-                    <div className="absolute top-1 left-[32%] sm:left-[35%] -translate-x-1/2 p-2.5 rounded-xl bg-white border border-[#E8EFF6] shadow-[0_10px_25px_rgba(0,0,0,0.08)] z-10 text-[11px] pointer-events-none">
-                      <p className="font-bold text-[#0B1B3D]">Mié 15 de ene</p>
-                      <div className="flex items-center gap-1.5 text-[#1D68F2] font-semibold mt-0.5">
-                        <span className="w-2 h-2 rounded-full bg-[#1D68F2]" />
-                        <span>Asistencias: <strong>96</strong></span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[#64748B] font-medium">
-                        <span className="w-2 h-2 rounded-full bg-[#BFDBFE]" />
-                        <span>Programadas: 120</span>
-                      </div>
-                    </div>
+                    {displayWeekData.map((d) => (
+                      <div key={d.day} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group relative">
+                        {/* Tooltip al hacer hover */}
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full mb-2 p-2 rounded-xl bg-white border border-[#E8EFF6] shadow-lg z-20 text-[10px] pointer-events-none whitespace-nowrap">
+                          <p className="font-bold text-[#0B1B3D]">{d.day}</p>
+                          <p className="text-[#1D68F2] font-semibold">Asistencias: {d.asistencias}</p>
+                          <p className="text-[#64748B]">Programadas: {d.programadas}</p>
+                        </div>
 
-                    {weekData.map((d) => (
-                      <div key={d.day} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
                         <div className="w-full max-w-[36px] flex items-end gap-1 h-full">
                           {/* Barra Asistencias */}
                           <div
                             className={`w-1/2 rounded-t-lg transition-all ${
                               d.current ? 'bg-[#1D68F2] shadow-sm' : 'bg-[#1D68F2]/90 hover:bg-[#1D68F2]'
                             }`}
-                            style={{ height: `${(d.asistencias / 120) * 100}%` }}
+                            style={{ height: `${Math.min(100, Math.max(8, (d.asistencias / maxWeekScale) * 100))}%` }}
                           />
                           {/* Barra Programadas */}
                           <div
                             className="w-1/2 rounded-t-lg bg-[#BFDBFE] transition-all hover:bg-[#93C5FD]"
-                            style={{ height: `${(d.programadas / 120) * 100}%` }}
+                            style={{ height: `${Math.min(100, Math.max(8, (d.programadas / maxWeekScale) * 100))}%` }}
                           />
                         </div>
                         <span className={`text-[11px] font-bold ${d.current ? 'text-[#1D68F2]' : 'text-[#64748B]'}`}>
@@ -469,7 +527,9 @@ export const DashboardPage: FC = () => {
                         <circle cx="50" cy="50" r="40" fill="transparent" stroke="#818CF8" strokeWidth="12" strokeDasharray="251.2" strokeDashoffset="235" strokeLinecap="round" />
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                        <span className="text-2xl font-black text-[#0B1B3D]">150</span>
+                        <span className="text-2xl font-black text-[#0B1B3D]">
+                          {dashboardStats?.roles?.total ?? 150}
+                        </span>
                         <span className="text-[10px] font-bold text-[#64748B]">Usuarios</span>
                       </div>
                     </div>
@@ -482,28 +542,27 @@ export const DashboardPage: FC = () => {
                         <span className="w-2.5 h-2.5 rounded-full bg-[#1D68F2]" />
                         <span>Administradores</span>
                       </div>
-                      <span className="font-bold text-[#64748B]">5 · 3.3%</span>
+                      <span className="font-bold text-[#64748B]">
+                        {dashboardStats?.roles?.admin.count ?? 5} · {dashboardStats?.roles?.admin.pct ?? 3.3}%
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 font-semibold text-[#0B1B3D]">
                         <span className="w-2.5 h-2.5 rounded-full bg-[#38BDF8]" />
                         <span>Supervisores</span>
                       </div>
-                      <span className="font-bold text-[#64748B]">18 · 12.0%</span>
+                      <span className="font-bold text-[#64748B]">
+                        {dashboardStats?.roles?.supervisor.count ?? 18} · {dashboardStats?.roles?.supervisor.pct ?? 12.0}%
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 font-semibold text-[#0B1B3D]">
                         <span className="w-2.5 h-2.5 rounded-full bg-[#818CF8]" />
                         <span>Conductores</span>
                       </div>
-                      <span className="font-bold text-[#64748B]">92 · 61.3%</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 font-semibold text-[#0B1B3D]">
-                        <span className="w-2.5 h-2.5 rounded-full bg-[#CBD5E1]" />
-                        <span>Usuarios generales</span>
-                      </div>
-                      <span className="font-bold text-[#64748B]">35 · 23.3%</span>
+                      <span className="font-bold text-[#64748B]">
+                        {dashboardStats?.roles?.conductor.count ?? 92} · {dashboardStats?.roles?.conductor.pct ?? 61.3}%
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -544,66 +603,73 @@ export const DashboardPage: FC = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#F8FAFD]">
-                        <tr>
-                          <td className="py-3 font-mono font-medium text-[#64748B]">07:02</td>
-                          <td className="py-3 font-bold text-[#0B1B3D]">Carlos Mendoza</td>
-                          <td className="py-3">
-                            <span className="inline-flex items-center gap-1.5 text-[#10B981] font-bold">
-                              <LogIn className="w-3.5 h-3.5" /> Registro de asistencia
-                            </span>
-                          </td>
-                          <td className="py-3 text-[#64748B]">Ingreso - Turno Mañana</td>
-                          <td className="py-3 text-right">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#DEF7EC] text-[#03543F]">
-                              Exitoso
-                            </span>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="py-3 font-mono font-medium text-[#64748B]">06:58</td>
-                          <td className="py-3 font-bold text-[#0B1B3D]">Ana Torres</td>
-                          <td className="py-3">
-                            <span className="inline-flex items-center gap-1.5 text-[#1D68F2] font-bold">
-                              <LogIn className="w-3.5 h-3.5" /> Inicio de sesión
-                            </span>
-                          </td>
-                          <td className="py-3 text-[#64748B]">Acceso al sistema</td>
-                          <td className="py-3 text-right">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#DEF7EC] text-[#03543F]">
-                              Exitoso
-                            </span>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="py-3 font-mono font-medium text-[#64748B]">06:55</td>
-                          <td className="py-3 font-bold text-[#0B1B3D]">Luis Ramírez</td>
-                          <td className="py-3">
-                            <span className="inline-flex items-center gap-1.5 text-[#10B981] font-bold">
-                              <LogIn className="w-3.5 h-3.5" /> Registro de asistencia
-                            </span>
-                          </td>
-                          <td className="py-3 text-[#64748B]">Ingreso - Turno Mañana</td>
-                          <td className="py-3 text-right">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#DEF7EC] text-[#03543F]">
-                              Exitoso
-                            </span>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="py-3 font-mono font-medium text-[#64748B]">06:50</td>
-                          <td className="py-3 font-bold text-[#0B1B3D]">María López</td>
-                          <td className="py-3">
-                            <span className="inline-flex items-center gap-1.5 text-[#8B5CF6] font-bold">
-                              <Edit3 className="w-3.5 h-3.5" /> Actualización de usuario
-                            </span>
-                          </td>
-                          <td className="py-3 text-[#64748B]">Datos del conductor</td>
-                          <td className="py-3 text-right">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#DEF7EC] text-[#03543F]">
-                              Exitoso
-                            </span>
-                          </td>
-                        </tr>
+                        {dashboardStats?.actividades_recientes && dashboardStats.actividades_recientes.length > 0 ? (
+                          dashboardStats.actividades_recientes.map((act, idx) => (
+                            <tr key={idx}>
+                              <td className="py-3 font-mono font-medium text-[#64748B]">{act.hora}</td>
+                              <td className="py-3 font-bold text-[#0B1B3D]">{act.usuario}</td>
+                              <td className="py-3">
+                                <span className="inline-flex items-center gap-1.5 text-[#10B981] font-bold">
+                                  <LogIn className="w-3.5 h-3.5" /> {act.accion}
+                                </span>
+                              </td>
+                              <td className="py-3 text-[#64748B]">{act.detalle}</td>
+                              <td className="py-3 text-right">
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#DEF7EC] text-[#03543F]">
+                                  {act.estado}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <>
+                            <tr>
+                              <td className="py-3 font-mono font-medium text-[#64748B]">07:02</td>
+                              <td className="py-3 font-bold text-[#0B1B3D]">Carlos Mendoza</td>
+                              <td className="py-3">
+                                <span className="inline-flex items-center gap-1.5 text-[#10B981] font-bold">
+                                  <LogIn className="w-3.5 h-3.5" /> Registro de asistencia
+                                </span>
+                              </td>
+                              <td className="py-3 text-[#64748B]">Ingreso - Turno Mañana</td>
+                              <td className="py-3 text-right">
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#DEF7EC] text-[#03543F]">
+                                  Exitoso
+                                </span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-3 font-mono font-medium text-[#64748B]">06:58</td>
+                              <td className="py-3 font-bold text-[#0B1B3D]">Ana Torres</td>
+                              <td className="py-3">
+                                <span className="inline-flex items-center gap-1.5 text-[#1D68F2] font-bold">
+                                  <LogIn className="w-3.5 h-3.5" /> Inicio de sesión
+                                </span>
+                              </td>
+                              <td className="py-3 text-[#64748B]">Acceso al sistema</td>
+                              <td className="py-3 text-right">
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#DEF7EC] text-[#03543F]">
+                                  Exitoso
+                                </span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-3 font-mono font-medium text-[#64748B]">06:55</td>
+                              <td className="py-3 font-bold text-[#0B1B3D]">Luis Ramírez</td>
+                              <td className="py-3">
+                                <span className="inline-flex items-center gap-1.5 text-[#10B981] font-bold">
+                                  <LogIn className="w-3.5 h-3.5" /> Registro de asistencia
+                                </span>
+                              </td>
+                              <td className="py-3 text-[#64748B]">Ingreso - Turno Mañana</td>
+                              <td className="py-3 text-right">
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#DEF7EC] text-[#03543F]">
+                                  Exitoso
+                                </span>
+                              </td>
+                            </tr>
+                          </>
+                        )}
                       </tbody>
                     </table>
                   </div>

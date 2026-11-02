@@ -262,3 +262,4 @@ DirectoryIndex index.html index.php
 4. **Error: 500 Internal Server Error en Laravel**
    - Verifica permisos de carpetas: `chmod -R 775 storage bootstrap/cache`.
    - Verifica que exista el archivo `.env` con su `APP_KEY`.
+

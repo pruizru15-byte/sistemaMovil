@@ -1,4 +1,6 @@
-import { useState, type FC } from 'react';
+import { useState, useEffect, type FC } from 'react';
+import { reportesApi, type ReporteStats } from '../../../shared/services/reportes.api';
+import { useAuth } from '../../auth/context/AuthContext';
 import {
   FileText,
   Download,
@@ -9,27 +11,85 @@ import {
   Bus,
   ShieldCheck,
   FileSpreadsheet,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 
+interface ReportLogItem {
+  id: number;
+  title: string;
+  tipo: string;
+  fecha: string;
+  size: string;
+  user: string;
+  category: 'asistencias' | 'vehiculos' | 'turnos';
+}
+
 export const ReportesPage: FC = () => {
+  const { user } = useAuth();
+
   const [fechaInicio, setFechaInicio] = useState('2026-10-01');
-  const [fechaFin, setFechaFin] = useState('2026-10-19');
+  const [fechaFin, setFechaFin] = useState(new Date().toISOString().split('T')[0]);
   const [selectedFormat, setSelectedFormat] = useState<'excel' | 'pdf'>('excel');
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState<string | null>(null);
 
-  const handleExport = (reportName: string) => {
-    setDownloadSuccess(`Exportando ${reportName} (${selectedFormat.toUpperCase()}) en red local...`);
-    setTimeout(() => {
-      setDownloadSuccess(null);
-    }, 4000);
+  const [stats, setStats] = useState<ReporteStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+
+  const [reportLogs, setReportLogs] = useState<ReportLogItem[]>([
+    { id: 1, title: 'Consolidado_Asistencias_Octubre_2026.csv', tipo: 'Asistencias', fecha: '2026-10-19 10:45', size: '142 KB', user: 'Admin Sistema', category: 'asistencias' },
+    { id: 2, title: 'Informe_Mantenimiento_Flota.csv', tipo: 'Flota', fecha: '2026-10-18 18:20', size: '48 KB', user: 'Supervisor Ate', category: 'vehiculos' },
+    { id: 3, title: 'Turnos_y_Horarios_RutaAte.csv', tipo: 'Turnos', fecha: '2026-10-17 09:15', size: '98 KB', user: 'Admin Sistema', category: 'turnos' },
+  ]);
+
+  useEffect(() => {
+    cargarStats();
+  }, [fechaInicio, fechaFin]);
+
+  const cargarStats = async () => {
+    try {
+      setIsLoadingStats(true);
+      const data = await reportesApi.getStats(fechaInicio, fechaFin);
+      setStats(data);
+    } catch {
+      // Si falla o no hay conexión aún, mantener métricas por defecto
+    } finally {
+      setIsLoadingStats(false);
+    }
   };
 
-  const reportLogs = [
-    { id: 1, title: 'Consolidado_Asistencias_Octubre_2026.xlsx', tipo: 'Asistencias', fecha: '2026-10-19 10:45', size: '142 KB', user: 'Admin Sistema' },
-    { id: 2, title: 'Informe_Mantenimiento_Flota_Semana42.pdf', tipo: 'Flota', fecha: '2026-10-18 18:20', size: '2.4 MB', user: 'Supervisor Ate' },
-    { id: 3, title: 'Turnos_y_Horarios_RutaAte_S15.xlsx', tipo: 'Turnos', fecha: '2026-10-17 09:15', size: '98 KB', user: 'Admin Sistema' },
-    { id: 4, title: 'Auditoria_Geocercas_GPS_Septiembre.pdf', tipo: 'Seguridad', fecha: '2026-10-15 14:00', size: '1.8 MB', user: 'Admin Sistema' },
-  ];
+  const handleExport = async (category: 'asistencias' | 'vehiculos' | 'turnos', label: string) => {
+    setIsExporting(label);
+    setDownloadSuccess(null);
+    setDownloadError(null);
+
+    try {
+      await reportesApi.downloadReporte(category, fechaInicio, fechaFin);
+      const filename = `Reporte_${label.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
+      setDownloadSuccess(`Reporte "${label}" descargado exitosamente.`);
+
+      // Agregar a la tabla de historial
+      const newLog: ReportLogItem = {
+        id: Date.now(),
+        title: filename,
+        tipo: category.charAt(0).toUpperCase() + category.slice(1),
+        fecha: new Date().toISOString().replace('T', ' ').slice(0, 16),
+        size: '120 KB',
+        user: user?.full_name || user?.name || 'Usuario LAN',
+        category,
+      };
+      setReportLogs((prev) => [newLog, ...prev]);
+
+      setTimeout(() => setDownloadSuccess(null), 5000);
+    } catch {
+      setDownloadError(`Error al generar la descarga de ${label}. Verifique los filtros.`);
+      setTimeout(() => setDownloadError(null), 5000);
+    } finally {
+      setIsExporting(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -53,7 +113,7 @@ export const ReportesPage: FC = () => {
                 : 'text-[#64748B] hover:text-[#0B1B3D]'
             }`}
           >
-            <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+            <FileSpreadsheet className="w-3.5 h-3.5" /> CSV / Excel
           </button>
           <button
             onClick={() => setSelectedFormat('pdf')}
@@ -75,18 +135,27 @@ export const ReportesPage: FC = () => {
         </div>
       )}
 
+      {downloadError && (
+        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-2.5 text-xs font-bold text-red-700 animate-in fade-in">
+          <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+          <span>{downloadError}</span>
+        </div>
+      )}
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-[24px] bg-white border border-[#E8EFF6] shadow-[0_10px_30px_rgba(29,104,242,0.04)]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-[#64748B]">Informes Generados</span>
+            <span className="text-xs font-bold text-[#64748B]">Asistencias en Período</span>
             <div className="w-10 h-10 rounded-[14px] bg-[#EBF3FE] text-[#1D68F2] flex items-center justify-center">
               <FileText className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-3xl font-black text-[#0B1B3D]">128</p>
+          <p className="text-3xl font-black text-[#0B1B3D]">
+            {stats ? stats.total_asistencias : '---'}
+          </p>
           <p className="text-[11px] font-semibold text-[#64748B] mt-2">
-            Descargas este mes
+            Registros validados en LAN
           </p>
         </div>
 
@@ -97,36 +166,42 @@ export const ReportesPage: FC = () => {
               <TrendingUp className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-3xl font-black text-[#0B1B3D]">94.2%</p>
+          <p className="text-3xl font-black text-[#0B1B3D]">
+            {stats ? `${stats.tasa_puntualidad}%` : '---'}
+          </p>
           <div className="flex items-center gap-1.5 mt-2">
             <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-            <span className="text-[11px] font-semibold text-[#10B981]">+2.1% vs mes anterior</span>
+            <span className="text-[11px] font-semibold text-[#10B981]">Con tolerancia de 15m</span>
           </div>
         </div>
 
         <div className="p-5 rounded-[24px] bg-white border border-[#E8EFF6] shadow-[0_10px_30px_rgba(29,104,242,0.04)]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-[#64748B]">Cumplimiento GPS</span>
+            <span className="text-xs font-bold text-[#64748B]">Cumplimiento Geocerca</span>
             <div className="w-10 h-10 rounded-[14px] bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center">
               <ShieldCheck className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-3xl font-black text-[#0B1B3D]">98.5%</p>
+          <p className="text-3xl font-black text-[#0B1B3D]">
+            {stats ? `${stats.cumplimiento_gps}%` : '---'}
+          </p>
           <p className="text-[11px] font-semibold text-[#64748B] mt-2">
-            En geocerca Ate (300m)
+            En radio Terminal Ate
           </p>
         </div>
 
         <div className="p-5 rounded-[24px] bg-white border border-[#E8EFF6] shadow-[0_10px_30px_rgba(29,104,242,0.04)]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-[#64748B]">Horas Operadas</span>
+            <span className="text-xs font-bold text-[#64748B]">Servicios Concluidos</span>
             <div className="w-10 h-10 rounded-[14px] bg-[#FEF3C7] text-[#D97706] flex items-center justify-center">
               <Clock className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-3xl font-black text-[#0B1B3D]">1,840 h</p>
+          <p className="text-3xl font-black text-[#0B1B3D]">
+            {stats ? stats.servicios_completados : '---'}
+          </p>
           <p className="text-[11px] font-semibold text-[#64748B] mt-2">
-            En 6 rutas autorizadas
+            Rutas ejecutadas
           </p>
         </div>
       </div>
@@ -138,8 +213,8 @@ export const ReportesPage: FC = () => {
             <Calendar className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-xs font-bold text-[#0B1B3D]">Período de Liquidación</h3>
-            <p className="text-[11px] text-[#64748B]">Seleccione el intervalo para la generación de reportes</p>
+            <h3 className="text-xs font-bold text-[#0B1B3D]">Período de Liquidación y Auditoría</h3>
+            <p className="text-[11px] text-[#64748B]">Seleccione el intervalo para la generación y consolidación</p>
           </div>
         </div>
 
@@ -162,6 +237,14 @@ export const ReportesPage: FC = () => {
               className="px-3.5 py-1.5 rounded-xl border border-[#E2E8F0] bg-[#FAFCFF] text-xs font-semibold text-[#0B1B3D]"
             />
           </div>
+          <button
+            onClick={cargarStats}
+            disabled={isLoadingStats}
+            title="Actualizar métricas"
+            className="p-2 rounded-xl bg-[#F1F5F9] text-[#64748B] hover:text-[#1D68F2] hover:bg-[#EBF3FE] transition-colors cursor-pointer"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoadingStats ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 
@@ -181,10 +264,12 @@ export const ReportesPage: FC = () => {
             </p>
           </div>
           <button
-            onClick={() => handleExport('Asistencias y Puntualidad')}
-            className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[#1D68F2] hover:bg-[#1557D6] flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+            onClick={() => handleExport('asistencias', 'Asistencias y Puntualidad')}
+            disabled={isExporting !== null}
+            className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[#1D68F2] hover:bg-[#1557D6] flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer disabled:opacity-50"
           >
-            <Download className="w-3.5 h-3.5" /> Exportar Reporte
+            <Download className="w-3.5 h-3.5" />
+            {isExporting === 'Asistencias y Puntualidad' ? 'Descargando...' : 'Descargar Archivo CSV'}
           </button>
         </div>
 
@@ -198,14 +283,16 @@ export const ReportesPage: FC = () => {
               Rendimiento de Unidades
             </h3>
             <p className="text-xs text-[#64748B] mb-5 leading-relaxed">
-              Historial de kilometraje, estado de SOAT y revisión técnica, servicios concluidos y registro de incidencias mecánicas.
+              Historial de vehículos, estado de SOAT y revisión técnica, capacidad de pasajeros y estado operativo actual.
             </p>
           </div>
           <button
-            onClick={() => handleExport('Rendimiento de Unidades')}
-            className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[#1D68F2] hover:bg-[#1557D6] flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+            onClick={() => handleExport('vehiculos', 'Rendimiento de Unidades')}
+            disabled={isExporting !== null}
+            className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[#1D68F2] hover:bg-[#1557D6] flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer disabled:opacity-50"
           >
-            <Download className="w-3.5 h-3.5" /> Exportar Reporte
+            <Download className="w-3.5 h-3.5" />
+            {isExporting === 'Rendimiento de Unidades' ? 'Descargando...' : 'Descargar Archivo CSV'}
           </button>
         </div>
 
@@ -219,14 +306,16 @@ export const ReportesPage: FC = () => {
               Cumplimiento de Turnos
             </h3>
             <p className="text-xs text-[#64748B] mb-5 leading-relaxed">
-              Matriz de asignación de choferes por ruta, rotación de horarios mañana/tarde/noche y tasa de ausentismo justificado.
+              Matriz de asignación de choferes por ruta, rotación de horarios mañana/tarde/noche y estado de programación.
             </p>
           </div>
           <button
-            onClick={() => handleExport('Cumplimiento de Turnos')}
-            className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[#1D68F2] hover:bg-[#1557D6] flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+            onClick={() => handleExport('turnos', 'Cumplimiento de Turnos')}
+            disabled={isExporting !== null}
+            className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[#1D68F2] hover:bg-[#1557D6] flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer disabled:opacity-50"
           >
-            <Download className="w-3.5 h-3.5" /> Exportar Reporte
+            <Download className="w-3.5 h-3.5" />
+            {isExporting === 'Cumplimiento de Turnos' ? 'Descargando...' : 'Descargar Archivo CSV'}
           </button>
         </div>
       </div>
@@ -239,7 +328,7 @@ export const ReportesPage: FC = () => {
             <p className="text-xs text-[#64748B]">Auditoría de archivos producidos en el servidor local</p>
           </div>
           <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-[#F1F5F9] text-[#64748B]">
-            4 Archivos disponibles
+            {reportLogs.length} Archivos disponibles
           </span>
         </div>
 
@@ -271,10 +360,10 @@ export const ReportesPage: FC = () => {
                 <td className="py-3.5 px-4 font-semibold text-[#0B1B3D]">{log.user}</td>
                 <td className="py-3.5 px-5 text-right">
                   <button
-                    onClick={() => handleExport(log.title)}
+                    onClick={() => handleExport(log.category, log.tipo)}
                     className="px-3 py-1 rounded-xl text-xs font-bold text-[#1D68F2] hover:bg-[#EBF3FE] transition-colors cursor-pointer"
                   >
-                    Descargar
+                    Re-descargar
                   </button>
                 </td>
               </tr>

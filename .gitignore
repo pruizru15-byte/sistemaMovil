@@ -33,7 +33,9 @@ backend/storage/framework/cache/*
 backend/storage/framework/sessions/*
 backend/storage/framework/views/*
 
-# Editores y SO
+# Archivos temporales y zips de despliegue
+deployment/cpanel/*.zip
+*.zip
 .vscode/
 .idea/
 .DS_Store
