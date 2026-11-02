@@ -22,6 +22,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
+    config.headers['X-Authorization'] = `Bearer ${token}`;
   }
   return config;
 });

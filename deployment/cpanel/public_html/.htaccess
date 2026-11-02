@@ -7,6 +7,12 @@
 
 DirectoryIndex index.html index.php
 
+CGIPassAuth On
+
+<IfModule mod_setenvif.c>
+    SetEnvIfNoCase Authorization "(.*)" HTTP_AUTHORIZATION=$1
+</IfModule>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
@@ -20,7 +26,7 @@ DirectoryIndex index.html index.php
     RewriteRule ^portafolio(/.*)?$ - [L]
 
     # 3. Rutas API de Laravel y Sanctum -> procesadas por index.php
-    RewriteRule ^(api|sanctum)(/.*)?$ index.php [L,QSA]
+    RewriteRule ^(api|sanctum)(/.*)?$ index.php [E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L,QSA]
 
     # 4. Archivos estáticos existentes (JS, CSS, imágenes, favicon de frontend/dist)
     RewriteCond %{REQUEST_FILENAME} -f [OR]

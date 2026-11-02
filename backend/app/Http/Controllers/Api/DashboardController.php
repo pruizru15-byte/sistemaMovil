@@ -25,27 +25,23 @@ class DashboardController extends Controller
 
         // 1. Usuarios y Conductores
         $totalUsuarios = User::count();
-        $usuariosActivos = User::where('activo', true)->count();
-        $totalConductores = Conductor::where('activo', true)->count();
+        $usuariosActivos = User::where('is_active', true)->count();
+        $totalConductores = Conductor::count();
 
         // 2. Roles
-        $adminCount = User::where('role', 'admin')->where('activo', true)->count();
-        $supervisorCount = User::where('role', 'supervisor')->where('activo', true)->count();
-        $conductorCount = User::where('role', 'conductor')->where('activo', true)->count();
+        $adminCount = User::where('role', 'admin')->where('is_active', true)->count();
+        $supervisorCount = User::where('role', 'supervisor')->where('is_active', true)->count();
+        $conductorCount = User::where('role', 'conductor')->where('is_active', true)->count();
         $rolesTotal = max(1, $adminCount + $supervisorCount + $conductorCount);
 
         // 3. Asistencias y Turnos de Hoy
-        $asistenciasHoy = Asistencia::where('fecha', $hoy)->count();
+        $asistenciasHoy = Asistencia::whereDate('fecha_hora_servidor', $hoy)->count();
         $turnosProgramadosHoy = AsignacionTurno::where('fecha', $hoy)->count();
-        $serviciosActivos = Servicio::where('fecha', $hoy)
-            ->whereIn('estado', ['en_curso', 'iniciado', 'pendiente'])
-            ->count();
+        $serviciosActivos = Servicio::whereIn('estado', ['en_ruta', 'en_espera'])->count();
 
         // 4. Vehículos
         $totalVehiculos = Vehiculo::count();
-        $vehiculosOperativos = Vehiculo::where('estado', 'operativo')
-            ->orWhere('activo', true)
-            ->count();
+        $vehiculosOperativos = Vehiculo::whereIn('estado', ['operativo', 'en_ruta'])->count();
 
         // 5. Tendencia Semanal (Últimos 7 días terminando hoy)
         $diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -57,7 +53,7 @@ class DashboardController extends Controller
             $diaIndex = $fecha->dayOfWeek;
             $label = $diasSemana[$diaIndex] . ' ' . $fecha->format('d');
 
-            $asistCount = Asistencia::where('fecha', $fechaStr)->count();
+            $asistCount = Asistencia::whereDate('fecha_hora_servidor', $fechaStr)->count();
             $progCount = AsignacionTurno::where('fecha', $fechaStr)->count();
 
             // Valores de soporte si la base de datos está recién inicializada
