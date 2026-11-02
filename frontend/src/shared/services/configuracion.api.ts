@@ -39,3 +39,4 @@ export const configuracionApi = {
     return res.data;
   },
 };
+

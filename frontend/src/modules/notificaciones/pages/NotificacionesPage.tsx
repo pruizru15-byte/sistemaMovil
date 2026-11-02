@@ -520,3 +520,4 @@ export const NotificacionesPage: FC = () => {
     </div>
   );
 };
+

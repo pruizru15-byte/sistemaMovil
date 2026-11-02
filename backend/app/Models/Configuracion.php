@@ -42,3 +42,4 @@ class Configuracion extends Model
         );
     }
 }
+

@@ -46,3 +46,4 @@ export const reportesApi = {
     window.URL.revokeObjectURL(url);
   },
 };
+

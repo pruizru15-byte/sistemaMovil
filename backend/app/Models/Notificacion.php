@@ -36,3 +36,4 @@ class Notificacion extends Model
         return $this->leido_en !== null;
     }
 }
+

@@ -80,3 +80,4 @@ class ConfiguracionController extends Controller
         ]);
     }
 }
+

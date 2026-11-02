@@ -492,3 +492,4 @@ export const PerfilPage: FC = () => {
     </div>
   );
 };
+
