@@ -43,9 +43,6 @@ jobs:
           cd frontend
           node node_modules/@capacitor/cli/bin/capacitor sync android
 
-      - name: Configurar Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Configurar permisos de ejecucion para Gradle
         run: chmod +x frontend/android/gradlew
 
