@@ -6,12 +6,12 @@ use Illuminate\Http\Request;
 define('LARAVEL_START', microtime(true));
 
 // Modo mantenimiento si aplica
-if (file_exists($maintenance = __DIR__.'/../backend/storage/framework/maintenance.php')) {
+if (file_exists($maintenance = __DIR__.'/../../backend/storage/framework/maintenance.php')) {
     require $maintenance;
 }
 
-// Autoloader de Composer desde la carpeta privada del backend
-require __DIR__.'/../backend/vendor/autoload.php';
+// Autoloader de Composer desde la carpeta privada del backend fuera de public_html
+require __DIR__.'/../../backend/vendor/autoload.php';
 
 // Asegurar que la cabecera Authorization de Sanctum pase en entornos Apache CGI/FastCGI/suPHP
 if (empty($_SERVER['HTTP_AUTHORIZATION'])) {
@@ -35,7 +35,7 @@ if (empty($_SERVER['HTTP_AUTHORIZATION'])) {
 
 // Bootstrap de la aplicación Laravel
 /** @var Application $app */
-$app = require_once __DIR__.'/../backend/bootstrap/app.php';
+$app = require_once __DIR__.'/../../backend/bootstrap/app.php';
 
 $app->handleRequest(Request::capture());
 

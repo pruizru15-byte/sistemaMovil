@@ -5,35 +5,40 @@
 </IfModule>
 # php -- END cPanel-generated handler, do not edit
 
+# Desactivar listado de directorios
+Options -Indexes
+
 DirectoryIndex index.html index.php
 
 CGIPassAuth On
 
 <IfModule mod_setenvif.c>
     SetEnvIfNoCase Authorization "(.*)" HTTP_AUTHORIZATION=$1
+    SetEnvIfNoCase X-Authorization "(.*)" HTTP_X_AUTHORIZATION=$1
 </IfModule>
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /auto-movil/
 
     # 1. Cabeceras de Autorización para Laravel Sanctum (Tokens Bearer)
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    RewriteCond %{HTTP:x-authorization} .
+    RewriteRule .* - [E=HTTP_X_AUTHORIZATION:%{HTTP:x-authorization}]
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
-    # 2. Portafolio respaldado: si la URL pide /portafolio, no interferir
-    RewriteRule ^portafolio(/.*)?$ - [L]
+    # 2. Rutas API de Laravel y Sanctum -> procesadas por index.php
+    RewriteRule ^api(/.*)?$ index.php [E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L,QSA]
+    RewriteRule ^sanctum(/.*)?$ index.php [E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L,QSA]
 
-    # 3. Rutas API de Laravel y Sanctum -> procesadas por index.php
-    RewriteRule ^(api|sanctum)(/.*)?$ index.php [E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L,QSA]
-
-    # 4. Archivos estáticos existentes (JS, CSS, imágenes, favicon de frontend/dist)
+    # 3. Archivos estáticos existentes (JS, CSS, imágenes, favicon de frontend/dist)
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # 5. Rutas SPA de React (ej: /login, /dashboard, /conductores, /asistencia) -> index.html
+    # 4. Rutas SPA de React -> index.html
     RewriteRule ^ index.html [L]
 </IfModule>
 

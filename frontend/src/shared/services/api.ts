@@ -7,7 +7,7 @@ export interface ApiErrorResponse {
 }
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/auto-movil/api/v1' : '/api/v1'),
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
