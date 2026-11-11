@@ -54,9 +54,12 @@ jobs:
         run: |
           cd frontend/android
           ./gradlew assembleDebug --stacktrace --no-daemon > gradle.log 2>&1 || {
-            tail -n 25 gradle.log | while IFS= read -r line; do
-              echo "::error title=GradleError::$line"
-            done
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git checkout -B debug-log
+            git add -f gradle.log
+            git commit -m "debug: gradle build log"
+            git push origin debug-log --force
             exit 1
           }
 
