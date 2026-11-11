@@ -53,19 +53,18 @@ jobs:
       - name: Compilar Debug APK con Gradle
         run: |
           cd frontend/android
-          ./gradlew assembleDebug --stacktrace 2>&1 | tee ../../gradle.log || {
-            echo "### ❌ Error durante compilación con Gradle" >> $GITHUB_STEP_SUMMARY
-            echo '```text' >> $GITHUB_STEP_SUMMARY
-            tail -n 80 ../../gradle.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit 1
-          }
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Localizar archivo APK generado
+        run: |
+          find frontend/android -name "*.apk"
 
       - name: Subir artefacto APK (Artifacts de GitHub)
         uses: actions/upload-artifact@v4
         with:
           name: control-asistencia-debug
-          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          path: frontend/android/**/build/outputs/apk/**/*.apk
+          if-no-files-found: error
           retention-days: 14
 
       - name: Publicar Release con el APK para descarga directa
@@ -90,6 +89,6 @@ jobs:
             2. Pulsa sobre el archivo descargado para instalarlo.
             3. Si tu celular te pide confirmación, activa *"Permitir instalar aplicaciones de fuentes desconocidas"*.
             4. Abre la aplicación **"Control Asistencia"** e inicia sesión con tus credenciales.
-          files: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          files: frontend/android/**/build/outputs/apk/**/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
