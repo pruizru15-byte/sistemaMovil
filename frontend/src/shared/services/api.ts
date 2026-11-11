@@ -6,8 +6,18 @@ export interface ApiErrorResponse {
   errors?: Record<string, string[]>;
 }
 
+const resolveBaseUrl = () => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  if (typeof window !== 'undefined' && (window.location.protocol === 'capacitor:' || window.location.protocol === 'ionic:')) {
+    return 'https://popydev.com/auto-movil/api/v1';
+  }
+  return import.meta.env.PROD ? '/auto-movil/api/v1' : '/api/v1';
+};
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/auto-movil/api/v1' : '/api/v1'),
+  baseURL: resolveBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
