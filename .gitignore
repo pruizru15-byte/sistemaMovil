@@ -13,6 +13,7 @@ frontend/node_modules/
 # Archivos de compilación
 # Nota: Si subes el build compilado para cPanel puedes quitar frontend/dist de aquí
 # frontend/dist
+*.apk
 
 # Bases de datos y archivos de prueba locales
 backend/control_asistencia
