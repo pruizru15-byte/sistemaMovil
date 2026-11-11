@@ -53,7 +53,14 @@ jobs:
       - name: Compilar Debug APK con Gradle
         run: |
           cd frontend/android
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug --stacktrace --no-daemon > gradle.log 2>&1 || (tail -n 80 gradle.log && exit 1)
+
+      - name: Subir log de error de Gradle en caso de fallo
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-error-log
+          path: frontend/android/gradle.log
 
       - name: Localizar archivo APK generado
         run: |
