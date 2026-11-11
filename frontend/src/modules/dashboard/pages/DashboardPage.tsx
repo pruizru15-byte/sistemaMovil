@@ -36,6 +36,10 @@ import {
   Radio,
   TrendingUp,
   LogIn,
+  Menu,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 export const DashboardPage: FC = () => {
@@ -45,6 +49,33 @@ export const DashboardPage: FC = () => {
   const [activeSection, setActiveSection] = useState<string>('dashboard');
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  // Cerrar menú móvil al presionar tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsMobileMenuOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     dashboardApi
@@ -110,39 +141,74 @@ export const DashboardPage: FC = () => {
     year: 'numeric',
   }).format(new Date());
 
+  const currentNavItem = navItems.find((i) => i.id === activeSection) || navItems[0];
+  const CurrentIcon = currentNavItem.icon;
+
   return (
-    <div className="min-h-screen flex bg-[#EDF3F8] text-[#0F172A] font-sans">
+    <div className="min-h-screen flex bg-[#EDF3F8] text-[#0F172A] font-sans relative overflow-x-hidden">
       {/* ========================================================
-          BARRA LATERAL / SIDEBAR (Exacta al Mockup Oficial)
+          CAJÓN LATERAL MÓVIL (Off-Canvas Drawer con animación suave)
           ======================================================== */}
-      <aside className="w-64 bg-white border-r border-[#E8EFF6] hidden md:flex flex-col justify-between shrink-0 shadow-xs">
-        <div>
-          {/* Logo Superior con Squircle Azul */}
-          <div className="p-6 flex items-center gap-3.5 border-b border-[#F1F5F9]">
-            <div className="w-11 h-11 rounded-[16px] bg-[#1D68F2] flex items-center justify-center text-white shadow-[0_6px_16px_rgba(29,104,242,0.3)] shrink-0">
-              <Bus className="w-6 h-6" strokeWidth={2.2} />
+      {/* Backdrop oscuro translúcido */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300 md:hidden animate-fade-in"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Drawer deslizable para teléfonos y tablets */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white border-r border-[#E8EFF6] shadow-2xl flex flex-col justify-between transform transition-transform duration-300 ease-in-out md:hidden ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        aria-label="Navegación móvil"
+      >
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* Cabecera del Cajón */}
+          <div className="p-5 flex items-center justify-between border-b border-[#F1F5F9]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-[14px] bg-[#1D68F2] flex items-center justify-center text-white shadow-[0_4px_12px_rgba(29,104,242,0.3)] shrink-0">
+                <Bus className="w-5 h-5" strokeWidth={2.2} />
+              </div>
+              <div>
+                <h2 className="font-extrabold text-sm text-[#0B1B3D] tracking-tight leading-tight">
+                  Control Asistencia
+                </h2>
+                <p className="text-[10px] font-medium text-[#64748B]">Transporte de Personal</p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-extrabold text-[15px] text-[#0B1B3D] tracking-tight leading-tight">
-                Control de Asistencia
-              </h2>
-              <p className="text-[11px] font-medium text-[#64748B]">Transporte de Personal</p>
-            </div>
+            {/* Botón Cerrar (X) con área táctil >=44px */}
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-[#64748B] hover:text-[#0B1B3D] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
+              title="Cerrar menú lateral"
+              aria-label="Cerrar menú"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          {/* Menú de Navegación */}
-          <nav className="p-3.5 space-y-1">
+          {/* Menú de Navegación Móvil (Scrollable) */}
+          <nav className="p-3 space-y-1 overflow-y-auto flex-1">
+            <p className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#94A3B8]">
+              Módulos del Sistema
+            </p>
             {navItems.filter((i) => i.show).map((item) => {
               const Icon = item.icon;
               const isActive = activeSection === item.id;
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveSection(item.id)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  onClick={() => {
+                    setActiveSection(item.id);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer min-h-[48px] ${
                     isActive
-                      ? 'bg-[#1D68F2] text-white shadow-[0_6px_18px_rgba(29,104,242,0.25)]'
-                      : 'text-[#334155] hover:bg-[#F1F5F9] hover:text-[#0B1B3D]'
+                      ? 'bg-[#1D68F2] text-white shadow-[0_4px_14px_rgba(29,104,242,0.25)]'
+                      : 'text-[#334155] hover:bg-[#F8FAFD] hover:text-[#0B1B3D]'
                   }`}
                 >
                   <div className="flex items-center gap-3.5">
@@ -150,7 +216,11 @@ export const DashboardPage: FC = () => {
                     <span>{item.label}</span>
                   </div>
                   {item.badge && (
-                    <span className="w-5 h-5 rounded-full bg-[#EF4444] text-white text-[10px] flex items-center justify-center font-bold">
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                        isActive ? 'bg-white text-[#1D68F2]' : 'bg-[#EF4444] text-white'
+                      }`}
+                    >
                       {item.badge}
                     </span>
                   )}
@@ -160,13 +230,148 @@ export const DashboardPage: FC = () => {
           </nav>
         </div>
 
-        {/* Tarjeta Inferior de Estado LAN (Mockup Oficial) */}
-        <div className="p-4 m-3.5 rounded-2xl bg-[#F8FAFD] border border-[#E8EFF6] flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-[#10B981] ring-4 ring-[#10B981]/20 animate-pulse shrink-0" />
-          <div className="text-[11px] leading-tight">
-            <p className="font-bold text-[#0B1B3D]">Sistema en red local</p>
-            <p className="text-[#64748B] font-medium mt-0.5">Conectado y operativo</p>
+        {/* Pie del Cajón Móvil */}
+        <div className="p-4 border-t border-[#F1F5F9] bg-[#F8FAFD]/60 space-y-3 shrink-0">
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white border border-[#E8EFF6] text-[11px]">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#10B981] ring-3 ring-[#10B981]/20 animate-pulse shrink-0" />
+            <div className="leading-tight">
+              <span className="font-bold text-[#0B1B3D]">Red local LAN</span>
+              <p className="text-[10px] text-[#64748B]">Sistema en línea</p>
+            </div>
           </div>
+
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-full bg-[#1D68F2] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                <User className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-[#0B1B3D] truncate">
+                  {user?.name} {user?.last_name}
+                </p>
+                <p className="text-[10px] font-semibold text-[#64748B] capitalize truncate">
+                  {user?.role}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              title="Cerrar sesión"
+              className="p-2 rounded-xl text-[#94A3B8] hover:text-[#EF4444] hover:bg-red-50 transition-colors cursor-pointer shrink-0"
+              aria-label="Cerrar sesión"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* ========================================================
+          BARRA LATERAL DESKTOP (Colapsable / Encojible a modo icono)
+          ======================================================== */}
+      <aside
+        className={`bg-white border-r border-[#E8EFF6] hidden md:flex flex-col justify-between shrink-0 shadow-xs transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? 'w-20' : 'w-64'
+        }`}
+      >
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* Logo Superior con botón de encojer/expandir */}
+          <div
+            className={`p-4 border-b border-[#F1F5F9] flex items-center ${
+              isSidebarCollapsed ? 'justify-center flex-col gap-2' : 'justify-between gap-3'
+            }`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-11 h-11 rounded-[16px] bg-[#1D68F2] flex items-center justify-center text-white shadow-[0_6px_16px_rgba(29,104,242,0.3)] shrink-0">
+                <Bus className="w-6 h-6" strokeWidth={2.2} />
+              </div>
+              {!isSidebarCollapsed && (
+                <div className="min-w-0">
+                  <h2 className="font-extrabold text-[15px] text-[#0B1B3D] tracking-tight leading-tight truncate">
+                    Control de Asistencia
+                  </h2>
+                  <p className="text-[11px] font-medium text-[#64748B] truncate">Transporte de Personal</p>
+                </div>
+              )}
+            </div>
+
+            {/* Botón para encoger / expandir la barra lateral */}
+            <button
+              onClick={toggleSidebarCollapse}
+              className="p-1.5 rounded-xl text-[#94A3B8] hover:text-[#0B1B3D] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
+              title={isSidebarCollapsed ? 'Expandir barra lateral' : 'Encoger barra lateral'}
+              aria-label={isSidebarCollapsed ? 'Expandir barra lateral' : 'Encoger barra lateral'}
+            >
+              {isSidebarCollapsed ? (
+                <ChevronRight className="w-4 h-4" />
+              ) : (
+                <ChevronLeft className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+
+          {/* Menú de Navegación Desktop */}
+          <nav className="p-3 space-y-1 overflow-y-auto flex-1">
+            {navItems.filter((i) => i.show).map((item) => {
+              const Icon = item.icon;
+              const isActive = activeSection === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id)}
+                  title={isSidebarCollapsed ? item.label : undefined}
+                  className={`w-full flex items-center rounded-2xl text-xs font-bold transition-all cursor-pointer relative ${
+                    isSidebarCollapsed ? 'justify-center py-3 px-2' : 'justify-between px-4 py-3'
+                  } ${
+                    isActive
+                      ? 'bg-[#1D68F2] text-white shadow-[0_6px_18px_rgba(29,104,242,0.25)]'
+                      : 'text-[#334155] hover:bg-[#F1F5F9] hover:text-[#0B1B3D]'
+                  }`}
+                >
+                  <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3.5'}`}>
+                    <Icon className="w-4 h-4 shrink-0" strokeWidth={isActive ? 2.4 : 2} />
+                    {!isSidebarCollapsed && <span>{item.label}</span>}
+                  </div>
+
+                  {/* Badge en modo expandido */}
+                  {!isSidebarCollapsed && item.badge && (
+                    <span
+                      className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-bold ${
+                        isActive ? 'bg-white text-[#1D68F2]' : 'bg-[#EF4444] text-white'
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+
+                  {/* Dot indicador en modo encogido */}
+                  {isSidebarCollapsed && item.badge && (
+                    <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#EF4444] ring-2 ring-white" />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Tarjeta Inferior de Estado LAN */}
+        <div className="p-3 border-t border-[#F1F5F9] shrink-0">
+          {!isSidebarCollapsed ? (
+            <div className="p-3.5 rounded-2xl bg-[#F8FAFD] border border-[#E8EFF6] flex items-center gap-3">
+              <div className="w-3 h-3 rounded-full bg-[#10B981] ring-4 ring-[#10B981]/20 animate-pulse shrink-0" />
+              <div className="text-[11px] leading-tight">
+                <p className="font-bold text-[#0B1B3D]">Sistema en red local</p>
+                <p className="text-[#64748B] font-medium mt-0.5">Conectado y operativo</p>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="flex justify-center p-2 rounded-xl bg-[#F8FAFD] border border-[#E8EFF6]"
+              title="Sistema en red local: Conectado y operativo"
+            >
+              <div className="w-3 h-3 rounded-full bg-[#10B981] ring-4 ring-[#10B981]/20 animate-pulse" />
+            </div>
+          )}
         </div>
       </aside>
 
@@ -174,28 +379,52 @@ export const DashboardPage: FC = () => {
           ÁREA PRINCIPAL DE CONTENIDO
           ======================================================== */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Cabecera Superior (Top Bar) */}
-        <header className="h-16 px-6 sm:px-8 bg-white border-b border-[#E8EFF6] flex items-center justify-between gap-4 shrink-0">
-          {/* Buscador Estilo Pill */}
-          <div className="relative max-w-md w-full hidden sm:block">
-            <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
-            <input
-              type="text"
-              placeholder="Buscar usuarios, vehículos, rutas o reportes..."
-              className="w-full pl-11 pr-20 py-2.5 rounded-full text-xs bg-[#F8FAFD] border border-[#E2E8F0] placeholder-[#94A3B8] text-[#0F172A] focus:outline-none focus:border-[#1D68F2] focus:bg-white transition-all"
-            />
-            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-md bg-[#EDF2F7] text-[10px] font-bold text-[#64748B]">
-              Ctrl + K
-            </span>
+        {/* Cabecera Superior (Top Bar Responsive) */}
+        <header className="h-16 px-4 sm:px-8 bg-white border-b border-[#E8EFF6] flex items-center justify-between gap-3 shrink-0 sticky top-0 z-20 shadow-xs">
+          {/* Lado Izquierdo: Botón Hamburguesa en Móvil + Módulo Actual */}
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Botón Hamburguesa Móvil (Área táctil >=44px) */}
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="md:hidden w-11 h-11 rounded-2xl bg-[#F8FAFD] border border-[#E8EFF6] flex items-center justify-center text-[#0B1B3D] hover:bg-[#F1F5F9] active:scale-95 transition-all cursor-pointer shrink-0"
+              title="Abrir menú de módulos"
+              aria-label="Abrir menú de navegación"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            {/* Módulo Activo en Pantallas Móviles */}
+            <div className="flex items-center gap-2.5 md:hidden min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-[#EBF3FE] text-[#1D68F2] flex items-center justify-center shrink-0">
+                <CurrentIcon className="w-4 h-4" strokeWidth={2.4} />
+              </div>
+              <span className="text-sm font-extrabold text-[#0B1B3D] truncate max-w-[150px] sm:max-w-xs">
+                {currentNavItem.label}
+              </span>
+            </div>
+
+            {/* Buscador Estilo Pill (Desktop) */}
+            <div className="relative max-w-md w-full hidden md:block">
+              <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+              <input
+                type="text"
+                placeholder="Buscar usuarios, vehículos, rutas o reportes..."
+                className="w-full pl-11 pr-20 py-2.5 rounded-full text-xs bg-[#F8FAFD] border border-[#E2E8F0] placeholder-[#94A3B8] text-[#0F172A] focus:outline-none focus:border-[#1D68F2] focus:bg-white transition-all"
+              />
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-md bg-[#EDF2F7] text-[10px] font-bold text-[#64748B]">
+                Ctrl + K
+              </span>
+            </div>
           </div>
 
           {/* Acciones de la Derecha */}
-          <div className="flex items-center gap-3 sm:gap-4 ml-auto">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             {/* Campana de Notificaciones con Badge */}
             <button
               onClick={() => setActiveSection('notificaciones')}
               className="relative w-10 h-10 rounded-full flex items-center justify-center text-[#475569] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
               title="Notificaciones"
+              aria-label="Notificaciones"
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
@@ -208,26 +437,31 @@ export const DashboardPage: FC = () => {
             {/* Switch de Tema Claro / Oscuro */}
             <button
               onClick={toggleTheme}
-              className="w-14 h-7 rounded-full bg-[#F1F5F9] border border-[#E2E8F0] p-0.5 flex items-center justify-between px-1.5 relative cursor-pointer"
+              className="w-13 sm:w-14 h-7 rounded-full bg-[#F1F5F9] border border-[#E2E8F0] p-0.5 flex items-center justify-between px-1.5 relative cursor-pointer"
               title="Cambiar tema"
+              aria-label="Cambiar tema"
             >
               <Sun className={`w-3.5 h-3.5 text-[#F59E0B] z-10 transition-opacity ${theme === 'light' ? 'opacity-100' : 'opacity-40'}`} />
               <Moon className={`w-3.5 h-3.5 text-[#6366F1] z-10 transition-opacity ${theme === 'dark' ? 'opacity-100' : 'opacity-40'}`} />
               <div
                 className={`absolute top-0.5 w-6 h-6 rounded-full bg-[#1D68F2] shadow-sm transition-transform ${
-                  theme === 'dark' ? 'translate-x-6' : 'translate-x-0'
+                  theme === 'dark' ? 'translate-x-5 sm:translate-x-6' : 'translate-x-0'
                 }`}
               />
             </button>
 
             {/* Separador */}
-            <div className="h-7 w-[1px] bg-[#E8EFF6]" />
+            <div className="h-7 w-[1px] bg-[#E8EFF6] hidden sm:block" />
 
             {/* Perfil de Usuario */}
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-[#1D68F2] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                onClick={() => setActiveSection('perfil')}
+                className="w-9 h-9 rounded-full bg-[#1D68F2] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 hover:ring-2 hover:ring-[#1D68F2]/30 transition-all cursor-pointer"
+                title="Ver mi perfil"
+              >
                 <User className="w-4 h-4" />
-              </div>
+              </button>
               <div className="hidden sm:block text-left">
                 <p className="text-xs font-bold text-[#0B1B3D] leading-tight">
                   {user?.name} {user?.last_name}
@@ -245,7 +479,8 @@ export const DashboardPage: FC = () => {
               <button
                 onClick={logout}
                 title="Cerrar sesión"
-                className="p-2 rounded-xl text-[#94A3B8] hover:text-[#EF4444] hover:bg-red-50 transition-colors ml-1 cursor-pointer"
+                className="p-2 rounded-xl text-[#94A3B8] hover:text-[#EF4444] hover:bg-red-50 transition-colors ml-0.5 cursor-pointer"
+                aria-label="Cerrar sesión"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -254,9 +489,9 @@ export const DashboardPage: FC = () => {
         </header>
 
         {/* ========================================================
-            CUERPO DE LA APLICACIÓN
+            CUERPO DE LA APLICACIÓN (con padding inferior para barra móvil)
             ======================================================== */}
-        <main className="p-6 sm:p-8 flex-1 overflow-y-auto space-y-6">
+        <main className="p-4 sm:p-8 pb-24 md:pb-8 flex-1 overflow-y-auto space-y-6">
           {/* Vistas Secundarias Conectadas */}
           {activeSection === 'usuarios' && <UsuariosPage />}
           {activeSection === 'conductores' && <ConductoresPage />}
@@ -752,6 +987,65 @@ export const DashboardPage: FC = () => {
             </>
           )}
         </main>
+
+        {/* ========================================================
+            BARRA DE NAVEGACIÓN INFERIOR MÓVIL (Touch-Friendly Native Style)
+            ======================================================== */}
+        <nav
+          className="fixed bottom-0 inset-x-0 z-30 md:hidden bg-white/95 backdrop-blur-md border-t border-[#E8EFF6] px-2 py-1 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] flex items-center justify-around"
+          aria-label="Navegación inferior móvil"
+        >
+          {[
+            { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
+            { id: 'asistencias', label: 'Asistencia', icon: ClipboardCheck },
+            { id: 'turnos', label: 'Turnos', icon: Calendar },
+            { id: 'rutas', label: 'Rutas', icon: RouteIcon },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeSection === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveSection(tab.id);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`flex-1 flex flex-col items-center justify-center py-1.5 min-h-[48px] rounded-2xl text-[10px] font-bold transition-all cursor-pointer ${
+                  isActive ? 'text-[#1D68F2]' : 'text-[#64748B] hover:text-[#0B1B3D]'
+                }`}
+              >
+                <div className={`p-1.5 rounded-xl transition-all ${isActive ? 'bg-[#EBF3FE] shadow-xs' : ''}`}>
+                  <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+                </div>
+                <span className="mt-0.5 truncate">{tab.label}</span>
+              </button>
+            );
+          })}
+
+          {/* Botón para Abrir el Menú Lateral Completo (Módulos) */}
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className={`flex-1 flex flex-col items-center justify-center py-1.5 min-h-[48px] rounded-2xl text-[10px] font-bold transition-all cursor-pointer ${
+              isMobileMenuOpen || !['dashboard', 'asistencias', 'turnos', 'rutas'].includes(activeSection)
+                ? 'text-[#1D68F2]'
+                : 'text-[#64748B] hover:text-[#0B1B3D]'
+            }`}
+          >
+            <div
+              className={`p-1.5 rounded-xl transition-all relative ${
+                isMobileMenuOpen || !['dashboard', 'asistencias', 'turnos', 'rutas'].includes(activeSection)
+                  ? 'bg-[#EBF3FE] shadow-xs'
+                  : ''
+              }`}
+            >
+              <Menu className="w-5 h-5" strokeWidth={2.2} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#EF4444] ring-2 ring-white" />
+              )}
+            </div>
+            <span className="mt-0.5 truncate">Módulos</span>
+          </button>
+        </nav>
       </div>
     </div>
   );
