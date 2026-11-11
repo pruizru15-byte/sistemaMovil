@@ -41,12 +41,12 @@ jobs:
       - name: Sincronizar Capacitor con Android
         run: |
           cd frontend
-          npm run cap -- sync android
+          node node_modules/@capacitor/cli/bin/capacitor sync android
 
       - name: Configurar Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Configurar permisos de Gradle
+      - name: Configurar permisos de ejecucion para Gradle
         run: chmod +x frontend/android/gradlew
 
       - name: Compilar Debug APK con Gradle
@@ -70,17 +70,17 @@ jobs:
           body: |
             ### 📱 App Móvil para Android — Sistema de Asistencia y Turnos
             
-            Esta aplicación móvil está compilada y configurada para conectarse directamente al sistema en vivo:
+            Esta aplicación móvil está compilada y conectada directamente al sistema en vivo:
             **https://popydev.com/auto-movil**
             
             #### Características de la App:
-            - **Conectividad en tiempo real:** Carga la aplicación en vivo con sesión persistente.
-            - **Permisos nativos:** Soporte completo de geolocalización GPS para marcación de asistencias y red.
+            - **Conectividad en vivo:** Carga la aplicación en tiempo real con sesión persistente.
+            - **Permisos nativos:** Soporte completo de geolocalización GPS para marcación de asistencias.
             - **Compatibilidad:** Android 8.0 o superior (minSDK 26).
             
             #### Cómo instalar en tu teléfono Android:
             1. Descarga el archivo adjunto `app-debug.apk` directamente desde tu celular.
-            2. Pulsa sobre el archivo descargado para instalar.
+            2. Pulsa sobre el archivo descargado para instalarlo.
             3. Si tu celular te pide confirmación, activa *"Permitir instalar aplicaciones de fuentes desconocidas"*.
             4. Abre la aplicación **"Control Asistencia"** e inicia sesión con tus credenciales.
           files: frontend/android/app/build/outputs/apk/debug/app-debug.apk
