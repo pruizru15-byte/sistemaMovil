@@ -53,15 +53,7 @@ jobs:
       - name: Compilar Debug APK con Gradle
         run: |
           cd frontend/android
-          ./gradlew assembleDebug --stacktrace --no-daemon > gradle.log 2>&1 || {
-            git config --global user.name "github-actions[bot]"
-            git config --global user.email "github-actions[bot]@users.noreply.github.com"
-            git checkout -B debug-log
-            git add -f gradle.log
-            git commit -m "debug: gradle build log"
-            git push origin debug-log --force
-            exit 1
-          }
+          ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Subir log de error de Gradle en caso de fallo
         if: failure()
