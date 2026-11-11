@@ -54,10 +54,9 @@ jobs:
         run: |
           cd frontend/android
           ./gradlew assembleDebug --stacktrace --no-daemon > gradle.log 2>&1 || {
-            echo "### ❌ Detalle de error Gradle" >> $GITHUB_STEP_SUMMARY
-            echo '```text' >> $GITHUB_STEP_SUMMARY
-            cat gradle.log | grep -E "FAILURE|What went wrong|Caused by|error:" -A 8 -B 2 | head -n 50 >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -n 25 gradle.log | while IFS= read -r line; do
+              echo "::error title=GradleError::$line"
+            done
             exit 1
           }
 
